@@ -22,3 +22,19 @@ jobs:
 
       - name: Run PyTest
         run: pytest
+
+      - name: Build and Test Docker Image in CI
+        run: |
+          docker build -t flask-app:v1 .
+          docker run -d --name test-container -p 5000:5000 flask-app:v1
+          sleep 3
+          curl -f http://localhost:5000
+          docker stop test-container
+
+      - name: Push to Docker Hub (if DOCKERHUB_USERNAME secret is set)
+        if: ${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
+        run: |
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+          docker tag flask-app:v1 ${{ secrets.DOCKERHUB_USERNAME }}/flask-app:v1
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/flask-app:v1
+
