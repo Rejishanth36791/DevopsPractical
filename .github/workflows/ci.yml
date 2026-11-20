@@ -32,9 +32,15 @@ jobs:
           docker stop test-container
 
       - name: Push to Docker Hub (if DOCKERHUB_USERNAME secret is set)
-        if: ${{ secrets.DOCKERHUB_USERNAME != '' && secrets.DOCKERHUB_TOKEN != '' }}
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
         run: |
-          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-          docker tag flask-app:v1 ${{ secrets.DOCKERHUB_USERNAME }}/flask-app:v1
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/flask-app:v1
+          if [ -n "$DOCKERHUB_USERNAME" ] && [ -n "$DOCKERHUB_TOKEN" ]; then
+            echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+            docker tag flask-app:v1 "$DOCKERHUB_USERNAME/flask-app:v1"
+            docker push "$DOCKERHUB_USERNAME/flask-app:v1"
+          else
+            echo "DOCKERHUB_USERNAME and DOCKERHUB_TOKEN secrets not set yet; skipping Docker Hub push."
+          fi
 
